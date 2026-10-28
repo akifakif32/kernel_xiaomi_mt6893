@@ -119,6 +119,8 @@ static struct bpf_map *stack_map_alloc(union bpf_attr *attr)
 	/* hash table size must be power of 2 */
 	n_buckets = roundup_pow_of_two(attr->max_entries);
 
+	n_buckets = roundup_pow_of_two(attr->max_entries);
+
 	cost = n_buckets * sizeof(struct stack_map_bucket *) + sizeof(*smap);
 	err = bpf_map_charge_init(&mem, cost + attr->max_entries *
 			   (sizeof(struct stack_map_bucket) + (u64)value_size));
