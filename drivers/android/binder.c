@@ -561,7 +561,7 @@ struct binder_proc {
 	struct list_head todo;
 	struct binder_stats stats;
 	struct list_head delivered_death;
-	u32 max_threads;
+	int max_threads;
 	int requested_threads;
 	int requested_threads_started;
 	int tmp_ref;
@@ -1471,6 +1471,16 @@ binder_enqueue_thread_work_ilocked(struct binder_thread *thread,
 				   struct binder_work *work)
 {
 	binder_enqueue_work_ilocked(work, &thread->todo);
+
+	/* (e)poll-based threads require an explicit wakeup signal when
+	 * queuing their own work; they rely on these events to consume
+	 * messages without I/O block. Without it, threads risk waiting
+	 * indefinitely without handling the work.
+	 */
+	if (thread->looper & BINDER_LOOPER_STATE_POLL &&
+	    thread->pid == current->pid && !thread->process_todo)
+		wake_up_interruptible_sync(&thread->wait);
+
 	thread->process_todo = true;
 }
 
@@ -1613,7 +1623,9 @@ static bool binder_has_work(struct binder_thread *thread, bool do_proc_work)
 static bool binder_available_for_proc_work_ilocked(struct binder_thread *thread)
 {
 	return !thread->transaction_stack &&
-		binder_worklist_empty_ilocked(&thread->todo);
+		binder_worklist_empty_ilocked(&thread->todo) &&
+		(thread->looper & (BINDER_LOOPER_STATE_ENTERED |
+				   BINDER_LOOPER_STATE_REGISTERED));
 }
 
 static void binder_wakeup_poll_threads_ilocked(struct binder_proc *proc,
@@ -5757,7 +5769,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			goto err;
 		break;
 	case BINDER_SET_MAX_THREADS: {
-		u32 max_threads;
+		int max_threads;
 
 		if (copy_from_user(&max_threads, ubuf,
 				   sizeof(max_threads))) {

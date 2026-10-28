@@ -1846,6 +1846,7 @@ struct xhci_hcd {
 #define XHCI_INTEL_USB_ROLE_SW	BIT_ULL(31)
 #define XHCI_RESET_PLL_ON_DISCONNECT	BIT_ULL(34)
 #define XHCI_SNPS_BROKEN_SUSPEND    BIT_ULL(35)
+#define XHCI_NO_SOFT_RETRY	BIT_ULL(40)
 #define XHCI_DEV_WITH_SYNC_EP	BIT_ULL(63)
 
 	unsigned int		num_active_eps;
