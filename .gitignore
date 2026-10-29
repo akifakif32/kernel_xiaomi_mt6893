@@ -125,3 +125,6 @@ all.config
 # fetched Android config fragments
 kernel/configs/android-*.cfg
 
+
+# KernelSU-Next is a separate project, see the manifest
+/KernelSU-Next/
